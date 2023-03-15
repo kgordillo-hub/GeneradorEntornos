@@ -1,8 +1,12 @@
 package co.mlforex.forecast.generadorEntornos.logic.Command;
 
 import co.mlforex.forecast.generadorEntornos.logic.Invoker.Invocador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DockerBuildCommand extends Command{
+
+    Logger logger = LoggerFactory.getLogger(DockerBuildCommand.class);
 
     public DockerBuildCommand(Invocador invocador) {
         super(invocador);
@@ -10,7 +14,7 @@ public class DockerBuildCommand extends Command{
 
     @Override
     public void rollback() {
-        System.out.println("Rollback docker build");
+        logger.info("Ejecutando rollback de docker build");
         //Remove created folder if any
         ejecutarComando(generateRollbackCommands());
     }
@@ -26,7 +30,7 @@ public class DockerBuildCommand extends Command{
     }
 
     private String[] generateExecCommands() {
-        System.out.println("Ejecutando docker build...");
+        logger.info("Ejecutando docker build...");
         String linkRepo = invocador.getTransaccionInfo().getMensaje().getLinkRepo();
         String folderName = linkRepo.substring(linkRepo.lastIndexOf('/') + 1);
 

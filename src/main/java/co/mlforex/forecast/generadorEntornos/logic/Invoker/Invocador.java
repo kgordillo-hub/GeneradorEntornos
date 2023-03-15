@@ -2,18 +2,25 @@ package co.mlforex.forecast.generadorEntornos.logic.Invoker;
 
 import co.mlforex.forecast.generadorEntornos.logic.Command.*;
 import co.mlforex.forecast.generadorEntornos.logic.notification.NotificadorSns;
-import co.mlforex.forecast.generadorEntornos.model.Mensaje;
+import co.mlforex.forecast.generadorEntornos.model.EntornoVirtualInfo;
 import co.mlforex.forecast.generadorEntornos.model.TransaccionInfo;
+import co.mlforex.forecast.generadorEntornos.repository.AmbienteDockerInfoRepo;
 import co.mlforex.forecast.generadorEntornos.repository.ImagenDockerInfoRepo;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Invocador extends Thread {
 
+    Logger logger = LoggerFactory.getLogger(Invocador.class);
+
     private TransaccionInfo transaccionInfo;
+    private EntornoVirtualInfo entornoVirtualInfo;
     private CommandHistory commandHistory;
 
     private String topicArn;
@@ -23,7 +30,19 @@ public class Invocador extends Thread {
 
     ImagenDockerInfoRepo imagenDockerInfoRepo;
 
+    AmbienteDockerInfoRepo ambienteDockerInfoRepo;
+
     private Boolean genImagen = Boolean.FALSE;
+
+    public Invocador(EntornoVirtualInfo entornoVirtualInfo, TransaccionInfo transaccionInfo, String topicArn, Boolean genImagen,
+                     AmbienteDockerInfoRepo ambienteDockerInfoRepo) {
+        this.entornoVirtualInfo = entornoVirtualInfo;
+        this.transaccionInfo = transaccionInfo;
+        this.topicArn = topicArn;
+        this.genImagen = genImagen;
+        this.ambienteDockerInfoRepo = ambienteDockerInfoRepo;
+        commandHistory = new CommandHistory();
+    }
 
     public Invocador(TransaccionInfo transaccionInfo, String gitFolder, String ecrRepoUrl, String topicArn,
                      Boolean genImagen, ImagenDockerInfoRepo imagenDockerInfoRepo) {
@@ -62,50 +81,92 @@ public class Invocador extends Thread {
             if (state) {
                 String linkRepo = transaccionInfo.getMensaje().getLinkRepo();
                 String version = transaccionInfo.getVersion();
-                String imageName = linkRepo.substring(linkRepo.lastIndexOf('/') + 1);
+                String imageName = linkRepo.substring(linkRepo.lastIndexOf('/') + 1).toLowerCase();
                 String imageTag = ecrRepoUrl + ":" + imageName + "-" + version;
 
                 transaccionInfo.getMensaje().setImagenGenerada(Boolean.TRUE);
                 transaccionInfo.getMensaje().setImageTag(imageTag);
                 final String message = new GsonBuilder().disableHtmlEscaping().create().toJson(transaccionInfo);
-                System.out.println("Notificando evento...");
+                logger.info("Notificando evento de generación de imagen...");
                 notificarEvento(message);
-                System.out.println("Actualizando transacción");
+                logger.info("Actualizando generacion info");
                 imagenDockerInfoRepo.save(transaccionInfo);
             }
 
         } catch (final Exception e) {
-            e.printStackTrace();
+            logger.debug("Error en Invocador:crearImagenDocker", e.getMessage());
             throw e;
         }
     }
 
-    public Boolean crearEntornoDocker() {
-        Command dockerPull = new DockerPullCommand(this);
-        dockerPull.ejecutar();
-        commandHistory.push(dockerPull);
+    public void crearEntornoDocker() {
+        try {
+            Boolean state = Boolean.TRUE;
+            final List<Command> commandsToExecute = new ArrayList<>();
+            Command dockerPull = new DockerPullCommand(this);
+            Command dockerRun = new DockerRunCommand(this);
 
-        Command dockerRun = new DockerRunCommand(this);
-        dockerRun.ejecutar();
-        commandHistory.push(dockerRun);
+            commandsToExecute.add(dockerPull);
+            commandsToExecute.add(dockerRun);
 
-        return Boolean.TRUE;
+            for (final Command c : commandsToExecute) {
+                if (state) {
+                    commandHistory.push(c);
+                    state = c.ejecutar();
+                }
+            }
+            if (state) {
+                String currentIP = currentIpAddress();
+                entornoVirtualInfo.setIP_API(currentIP != null ? currentIP : "");
+                final String message = new GsonBuilder().disableHtmlEscaping().create().toJson(entornoVirtualInfo);
+                logger.info("Notificando evento de generación ambiente...");
+                notificarEvento(message);
+                logger.info("Actualizando ambiente info");
+                ambienteDockerInfoRepo.save(entornoVirtualInfo);
+            }
+        } catch (final Exception e) {
+            logger.debug("Error en Invocador:crearEntornoDocker", e.getMessage());
+            throw e;
+        }
     }
 
     public void totalRollback() {
         //Include try catch
         Command command;
-        System.out.println("Iniciando rollback");
+        logger.info("Iniciando total rollback");
         while ((command = commandHistory.pop()) != null) {
-            System.out.println("Ejecutando RB...");
+            logger.info("Ejecutando RB...");
             command.rollback();
         }
-        transaccionInfo.getMensaje().setImagenGenerada(Boolean.FALSE);
-        final String messsage = new GsonBuilder().disableHtmlEscaping().create().toJson(transaccionInfo);
+        if (genImagen) {
+            String messsage = "";
+            transaccionInfo.getMensaje().setImagenGenerada(Boolean.FALSE);
+            //messsage = new GsonBuilder().disableHtmlEscaping().create().toJson(transaccionInfo);
+            logger.info("Actualizando transacción");
+            imagenDockerInfoRepo.save(transaccionInfo);
+            //notificarEvento(messsage);
+        }
 
-        notificarEvento(messsage);
-        System.out.println("Actualizando transacción");
-        imagenDockerInfoRepo.save(transaccionInfo);
+    }
+
+    @Override
+    public void run() {
+        if (genImagen) {
+            crearImagenDocker();
+        } else {
+            crearEntornoDocker();
+        }
+    }
+
+    private String currentIpAddress() {
+        InetAddress IP = null;
+        try {
+            IP = InetAddress.getLocalHost();
+            return IP.getHostAddress();
+        } catch (UnknownHostException e) {
+            logger.debug("Error en Invocador:currentIpAddress",e.getMessage());
+            return null;
+        }
     }
 
     public void notificarEvento(String mensaje) {
@@ -124,13 +185,7 @@ public class Invocador extends Thread {
         return ecrRepoUrl;
     }
 
-
-    @Override
-    public void run() {
-        if (genImagen) {
-            crearImagenDocker();
-        } else {
-
-        }
+    public EntornoVirtualInfo getEntornoVirtualInfo() {
+        return entornoVirtualInfo;
     }
 }

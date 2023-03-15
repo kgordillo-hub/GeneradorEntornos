@@ -1,10 +1,14 @@
 package co.mlforex.forecast.generadorEntornos.logic.Command;
 
 import co.mlforex.forecast.generadorEntornos.logic.Invoker.Invocador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
 public abstract class Command {
+
+    Logger logger = LoggerFactory.getLogger(Command.class);
 
     Invocador invocador;
 
@@ -35,8 +39,9 @@ public abstract class Command {
             }
             BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
+            logger.info("Info de ejecución de comandos...");
             while ((line = r.readLine()) != null) {
-                System.out.println("Line: " + line);
+                logger.info("Line: " + line);
                 if(line.toLowerCase().contains("not found")|| line.toLowerCase().contains("error")||
                         line.toLowerCase().contains("fatal") || line.toLowerCase().contains("invalid")
                         || line.toLowerCase().contains("failed")){
@@ -45,7 +50,7 @@ public abstract class Command {
             }
             return Boolean.TRUE;
         }catch (final Exception e){
-            e.printStackTrace();
+            logger.debug("Error en Command.ejecutarComando: ",e.getMessage());
             return Boolean.FALSE;
         }
     }

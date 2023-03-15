@@ -1,8 +1,13 @@
 package co.mlforex.forecast.generadorEntornos.logic.Command;
 
 import co.mlforex.forecast.generadorEntornos.logic.Invoker.Invocador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CleanCommand extends Command{
+
+    Logger logger = LoggerFactory.getLogger(CleanCommand.class);
+
     public CleanCommand(Invocador invocador) {
         super(invocador);
     }
@@ -19,7 +24,7 @@ public class CleanCommand extends Command{
     }
 
     private String[] generateExecCommands() {
-        System.out.println("Ejecutando limpieza...");
+        logger.info("Ejecutando limpieza...");
         String linkRepo = invocador.getTransaccionInfo().getMensaje().getLinkRepo();
         String folderName = linkRepo.substring(linkRepo.lastIndexOf('/') + 1);
         String rmCommand = isWindows ? "rd /s /q" : "rm -r";

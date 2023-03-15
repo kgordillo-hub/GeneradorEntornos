@@ -14,6 +14,7 @@ import java.util.Iterator;
 @Service
 public class ServicioGenEntornosImp implements ServicioGenEntornos {
 
+
     @Autowired
     ImagenDockerInfoRepo imagenDockerInfoRepo;
 
@@ -24,8 +25,11 @@ public class ServicioGenEntornosImp implements ServicioGenEntornos {
     String repoFolder;
     @Value("${aws.ecr.repo.url}")
     String ecrUrl;
-    @Value("${aws.sns.topic.arn}")
-    String topicArn;
+    @Value("${aws.sns.topic.genImgOut.arn}")
+    String topicArnImgOut;
+
+    @Value("${aws.sns.topic.genEnvOut.arn}")
+    String topicArnEnvOut;
 
     @Override
     public Boolean generarImagenDocker(TransaccionInfo transaccionInfo) {
@@ -38,7 +42,7 @@ public class ServicioGenEntornosImp implements ServicioGenEntornos {
         } else if (transaccionInfo.getMensaje() != null) {
             transaccionInfo.setUID(UID);
             transaccionInfo.getMensaje().setImagenGenerada(Boolean.FALSE);
-            new Invocador(transaccionInfo, repoFolder, ecrUrl, topicArn, Boolean.TRUE, imagenDockerInfoRepo).start();
+            new Invocador(transaccionInfo, repoFolder, ecrUrl, topicArnImgOut, Boolean.TRUE, imagenDockerInfoRepo).start();
             imagenDockerInfoRepo.save(transaccionInfo);
             return Boolean.TRUE;
         }
@@ -46,11 +50,35 @@ public class ServicioGenEntornosImp implements ServicioGenEntornos {
     }
 
     @Override
-    public Boolean generarEntornoDocker(EntornoVirtualInfo transaccionInfo) {
-        // return new Invocador(transaccionInfo.getMensaje()).crearEntornoDocker();
-        
+    public Boolean generarEntornoDocker(EntornoVirtualInfo entornoInfo) {
+        entornoInfo.setNumeroPuerto(getNextPortAvaliable());
+        String UID = entornoInfo.generateUID();
+        entornoInfo.setUID(UID);
 
-        return Boolean.TRUE;
+        final TransaccionInfo ti = findByAppV(new TransaccionInfo(entornoInfo.getNombreApp(), entornoInfo.getVersion()));
+        if (ti != null) {
+            new Invocador(entornoInfo, ti, topicArnEnvOut, Boolean.FALSE, ambienteDockerInfoRepo).start();
+            //ambienteDockerInfoRepo.save(entornoInfo);
+            return Boolean.TRUE;
+        } else {
+            return Boolean.FALSE;
+        }
+
+    }
+
+    private Integer getNextPortAvaliable(){
+        final Iterable<EntornoVirtualInfo> transactions = ambienteDockerInfoRepo.findAll();
+        Integer numeroPuertoDefecto = 4999;
+        if (transactions != null) {
+            final Iterator<EntornoVirtualInfo> it = transactions.iterator();
+            while (it.hasNext()) {
+                EntornoVirtualInfo ev = it.next();
+                if(ev.getNumeroPuerto() >= numeroPuertoDefecto){
+                    numeroPuertoDefecto = ev.getNumeroPuerto();
+                }
+            }
+        }
+        return numeroPuertoDefecto + 1;
     }
 
     private TransaccionInfo findByAppV(TransaccionInfo transaccionInfo) {
@@ -63,7 +91,7 @@ public class ServicioGenEntornosImp implements ServicioGenEntornos {
                 String version = ti.getVersion().toLowerCase();
                 if (transaccionInfo.getNombreApp().equals(nombreApp) && transaccionInfo.getVersion().equals(version)
                         && ti.getMensaje().getImagenGenerada()) {
-                    return transaccionInfo;
+                    return ti;
                 }
             }
         }

@@ -1,5 +1,7 @@
 package co.mlforex.forecast.generadorEntornos.logic.notification;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -9,6 +11,7 @@ import software.amazon.awssdk.services.sns.model.SnsException;
 
 public class NotificadorSns {
 
+    Logger logger = LoggerFactory.getLogger(NotificadorSns.class);
 
     public NotificadorSns(){
 
@@ -33,11 +36,10 @@ public class NotificadorSns {
                     .build();
 
             PublishResponse result = snsClient.publish(request);
-            System.out.println(result.messageId() + " Message sent. Status is " + result.sdkHttpResponse().statusCode());
+            logger.info(result.messageId() + " Message sent. Status is " + result.sdkHttpResponse().statusCode());
 
         } catch (SnsException e) {
-            System.err.println(e.awsErrorDetails().errorMessage());
-            System.exit(1);
+            logger.debug("Error en NotificadorSns:pubTopic", e.getMessage());
         }
     }
 }

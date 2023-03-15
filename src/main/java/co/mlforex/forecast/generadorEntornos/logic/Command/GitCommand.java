@@ -1,13 +1,12 @@
 package co.mlforex.forecast.generadorEntornos.logic.Command;
 
 import co.mlforex.forecast.generadorEntornos.logic.Invoker.Invocador;
-import org.springframework.beans.factory.annotation.Value;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GitCommand extends Command {
 
+    Logger logger = LoggerFactory.getLogger(GitCommand.class);
 
     public GitCommand(Invocador invocador) {
         super(invocador);
@@ -15,7 +14,7 @@ public class GitCommand extends Command {
 
     @Override
     public void rollback() {
-        System.out.println("Rollback Git");
+        logger.info("Ejecutando Rollback Git");
         //Remove created folder if any
         ejecutarComando(generateRollbackCommands());
     }
@@ -32,7 +31,7 @@ public class GitCommand extends Command {
 
 
     private String[] generateExecCommands() {
-        System.out.println("Ejecutando git clone...");
+        logger.info("Ejecutando git clone...");
 
         String cdCommand = "cd " + invocador.getGitFolder();
         String gitClone = "git clone " + invocador.getTransaccionInfo().getMensaje().getLinkRepo();

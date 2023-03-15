@@ -1,7 +1,10 @@
 package co.mlforex.forecast.generadorEntornos.model;
 
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.Serializable;
 
@@ -10,12 +13,17 @@ public class EntornoVirtualInfo implements Serializable {
 
     private String UID;
     //Llave
+    @DynamoDBAttribute
     private String nombreApp;
+    @DynamoDBAttribute
     private String version;
+    @DynamoDBAttribute
     private Integer numeroPuerto;
 
     //Atributos
+    @DynamoDBAttribute
     private String IP_API;
+    @DynamoDBAttribute
     private String idUsuario;
 
     public String getNombreApp() {
@@ -56,5 +64,18 @@ public class EntornoVirtualInfo implements Serializable {
 
     public void setIdUsuario(String idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    @DynamoDBHashKey(attributeName = "UID")
+    public String getUID() {
+        return UID;
+    }
+
+    public void setUID(String UID) {
+        this.UID = UID;
+    }
+
+    public String generateUID(){
+        return DigestUtils.md5Hex(nombreApp.toLowerCase()+":"+version+":"+numeroPuerto);
     }
 }

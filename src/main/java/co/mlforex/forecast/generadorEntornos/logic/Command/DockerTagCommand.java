@@ -1,8 +1,13 @@
 package co.mlforex.forecast.generadorEntornos.logic.Command;
 
 import co.mlforex.forecast.generadorEntornos.logic.Invoker.Invocador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DockerTagCommand extends Command{
+
+    Logger logger = LoggerFactory.getLogger(DockerTagCommand.class);
+
     public DockerTagCommand(Invocador invocador) {
         super(invocador);
     }
@@ -10,7 +15,7 @@ public class DockerTagCommand extends Command{
     @Override
     public void rollback() {
         //Call general rollback
-        System.out.println("Rollback docker image tag");
+        logger.info("Ejecutando rollback docker image tag");
         //Remove created folder if any
         ejecutarComando(generateRollbackCommands());
     }
@@ -25,7 +30,7 @@ public class DockerTagCommand extends Command{
     }
 
     private String[] generateExecCommands() {
-        System.out.println("Ejecutando docker tag...");
+        logger.info("Ejecutando docker tag...");
         String linkRepo = invocador.getTransaccionInfo().getMensaje().getLinkRepo();
         String folderName = linkRepo.substring(linkRepo.lastIndexOf('/') + 1);
         String imageName = folderName.toLowerCase();
