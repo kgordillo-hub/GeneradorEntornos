@@ -94,7 +94,7 @@ public class Invocador extends Thread {
             }
 
         } catch (final Exception e) {
-            logger.debug("Error en Invocador:crearImagenDocker", e.getMessage());
+            logger.error("Error en Invocador:crearImagenDocker" + e.getMessage());
             throw e;
         }
     }
@@ -125,7 +125,7 @@ public class Invocador extends Thread {
                 ambienteDockerInfoRepo.save(entornoVirtualInfo);
             }
         } catch (final Exception e) {
-            logger.debug("Error en Invocador:crearEntornoDocker", e.getMessage());
+            logger.error("Error en Invocador:crearEntornoDocker" + e.getMessage());
             throw e;
         }
     }
@@ -141,10 +141,10 @@ public class Invocador extends Thread {
         if (genImagen) {
             String messsage = "";
             transaccionInfo.getMensaje().setImagenGenerada(Boolean.FALSE);
-            //messsage = new GsonBuilder().disableHtmlEscaping().create().toJson(transaccionInfo);
+            messsage = new GsonBuilder().disableHtmlEscaping().create().toJson(transaccionInfo);
             logger.info("Actualizando transacción");
             imagenDockerInfoRepo.save(transaccionInfo);
-            //notificarEvento(messsage);
+            notificarEvento(messsage);
         }
 
     }
@@ -164,7 +164,7 @@ public class Invocador extends Thread {
             IP = InetAddress.getLocalHost();
             return IP.getHostAddress();
         } catch (UnknownHostException e) {
-            logger.debug("Error en Invocador:currentIpAddress",e.getMessage());
+            logger.error("Error en Invocador:currentIpAddress" + e.getMessage());
             return null;
         }
     }

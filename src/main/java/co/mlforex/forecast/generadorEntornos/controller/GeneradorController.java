@@ -32,7 +32,7 @@ public class GeneradorController {
                 return new ResponseEntity<>("Configuration already exists", HttpStatus.NO_CONTENT);
             }
         } catch (final Exception ex) {
-            ex.printStackTrace();
+            logger.error("Error en GeneradorController:generarImagenDocker" + ex.getMessage());
             return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -48,7 +48,7 @@ public class GeneradorController {
                 return new ResponseEntity<>("Not able to run the docker", HttpStatus.NO_CONTENT);
             }
         }catch(final Exception ex){
-            ex.printStackTrace();
+            logger.error("Error en GeneradorController:geneerarEntornoDocker" + ex.getMessage());
             return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
 

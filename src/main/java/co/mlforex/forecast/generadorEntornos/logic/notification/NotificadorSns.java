@@ -39,7 +39,7 @@ public class NotificadorSns {
             logger.info(result.messageId() + " Message sent. Status is " + result.sdkHttpResponse().statusCode());
 
         } catch (SnsException e) {
-            logger.debug("Error en NotificadorSns:pubTopic", e.getMessage());
+            logger.error("Error en NotificadorSns:pubTopic" + e.getMessage());
         }
     }
 }
