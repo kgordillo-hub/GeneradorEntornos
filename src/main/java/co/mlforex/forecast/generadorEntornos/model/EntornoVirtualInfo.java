@@ -22,7 +22,7 @@ public class EntornoVirtualInfo implements Serializable {
 
     //Atributos
     @DynamoDBAttribute
-    private String IP_API;
+    private String ipAPI;
     @DynamoDBAttribute
     private String idUsuario;
 
@@ -50,12 +50,12 @@ public class EntornoVirtualInfo implements Serializable {
         this.numeroPuerto = numeroPuerto;
     }
 
-    public String getIP_API() {
-        return IP_API;
+    public String getIpAPI() {
+        return ipAPI;
     }
 
-    public void setIP_API(String IP_API) {
-        this.IP_API = IP_API;
+    public void setIpAPI(String ipAPI) {
+        this.ipAPI = ipAPI;
     }
 
     public String getIdUsuario() {

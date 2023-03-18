@@ -117,7 +117,7 @@ public class Invocador extends Thread {
             }
             if (state) {
                 String currentIP = currentIpAddress();
-                entornoVirtualInfo.setIP_API(currentIP != null ? currentIP : "");
+                entornoVirtualInfo.setIpAPI(currentIP != null ? currentIP : "");
                 final String message = new GsonBuilder().disableHtmlEscaping().create().toJson(entornoVirtualInfo);
                 logger.info("Notificando evento de generación ambiente...");
                 notificarEvento(message);
