@@ -89,7 +89,7 @@ public class ServicioGenEntornosImp implements ServicioGenEntornos {
                 TransaccionInfo ti = it.next();
                 String nombreApp = ti.getNombreApp().toLowerCase();
                 String version = ti.getVersion().toLowerCase();
-                if (transaccionInfo.getNombreApp().equals(nombreApp) && transaccionInfo.getVersion().equals(version)
+                if (transaccionInfo.getNombreApp().equalsIgnoreCase(nombreApp) && transaccionInfo.getVersion().equalsIgnoreCase(version)
                         && ti.getMensaje().getImagenGenerada()) {
                     return ti;
                 }
